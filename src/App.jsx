@@ -153,14 +153,14 @@ export default function App() {
           <Search className="text-slate-400" size={22} strokeWidth={1.8} />
         </div>
         <div className="flex-1 px-3">
-          <span className="text-slate-400 text-[15px] select-none">Nhap ten san pham hoac ma SKU</span>
+          <span className="text-slate-400 text-[15px] select-none">Nhập tên sản phẩm hoặc mã SKU</span>
         </div>
       </div>
       <div className="flex-1" />
       <div className="flex items-center gap-3">
         <button className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-100 transition-colors">
           <Store size={22} strokeWidth={1.8} className="text-slate-700" />
-          <span className="text-[15px] font-medium text-slate-900 whitespace-nowrap">Tap hoa di Thu</span>
+          <span className="text-[15px] font-medium text-slate-900 whitespace-nowrap">Tạp hóa dì Thư</span>
           <ChevronDown size={20} strokeWidth={1.8} className="text-slate-700" />
         </button>
         <div className="w-px h-7 bg-slate-300" />
@@ -194,11 +194,11 @@ export default function App() {
             <div className="relative z-20 flex items-center pl-6 pr-[18px] py-[18px] bg-white shrink-0">
               <div className="flex items-center gap-2">
                 <Sparkles size={26} strokeWidth={1.8} className="text-amber-500" />
-                <span className="text-[17px] font-medium text-slate-900">Tro ly Win</span>
+                <span className="text-[17px] font-medium text-slate-900">Trợ lý Win</span>
               </div>
               <div className="ml-auto flex items-center gap-1.5">
                 <div className={`w-2 h-2 rounded-full ${isListening ? 'bg-red-500 animate-pulse' : 'bg-green-400'}`} />
-                <span className="text-[13px] text-slate-400">{isListening ? 'Dang nghe...' : 'San sang'}</span>
+                <span className="text-[13px] text-slate-400">{isListening ? 'Đang nghe...' : 'Sẵn sàng'}</span>
               </div>
             </div>
 
@@ -231,7 +231,7 @@ export default function App() {
                 <div className="flex items-center border border-slate-200 bg-white rounded-2xl shadow-sm gap-0">
                   <button className="flex items-center gap-3 h-[60px] px-6 hover:bg-slate-50 rounded-l-2xl transition-colors text-slate-900">
                     <Camera size={20} strokeWidth={1.8} />
-                    <span className="text-[15px] font-medium whitespace-nowrap">Chup tao don</span>
+                    <span className="text-[15px] font-medium whitespace-nowrap">Chụp tạo đơn</span>
                   </button>
                   <div className="w-px h-6 bg-slate-200" />
                   {/* Record button — Lottie khi listening, static khi idle */}
@@ -255,7 +255,7 @@ export default function App() {
                   <div className="w-px h-6 bg-slate-200" />
                   <button className="flex items-center gap-3 h-[60px] px-6 hover:bg-slate-50 rounded-r-2xl transition-colors text-slate-900">
                     <Keyboard size={20} strokeWidth={1.8} />
-                    <span className="text-[15px] font-medium whitespace-nowrap">Nhap tin nhan</span>
+                    <span className="text-[15px] font-medium whitespace-nowrap">Nhập tin nhắn</span>
                   </button>
                 </div>
               </div>
@@ -265,21 +265,21 @@ export default function App() {
           {/* Right: Cart */}
           <div className="flex flex-col bg-white rounded-3xl overflow-hidden min-h-0">
             <div className="flex items-center gap-3 pl-6 pr-[18px] py-[18px] border-b border-slate-200 shrink-0">
-              <p className="flex-1 text-[16px] font-semibold text-slate-900 truncate">Don hang moi</p>
+              <p className="flex-1 text-[16px] font-semibold text-slate-900 truncate">Đơn hàng mới</p>
               <button className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-slate-100 transition-colors">
                 <SquarePen size={18} strokeWidth={1.8} className="text-slate-500" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-6 min-h-0 flex items-center justify-center">
-              <p className="text-[14px] text-slate-400 italic text-center">Dang xu ly don hang...</p>
+              <p className="text-[14px] text-slate-400 italic text-center">Đang xử lý đơn hàng...</p>
             </div>
             <div className="flex items-center gap-6 pl-6 pr-[18px] py-[18px] border-t border-slate-200 shrink-0">
               <div className="flex-1 flex items-center justify-between">
-                <span className="text-[15px] text-slate-700">Tong tien:</span>
+                <span className="text-[15px] text-slate-700">Tổng tiền:</span>
                 <span className="text-[15px] font-semibold text-red-600">--</span>
               </div>
               <button className="flex items-center h-[60px] px-6 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors shadow-sm">
-                <span className="text-[15px] font-medium whitespace-nowrap">Thanh toan</span>
+                <span className="text-[15px] font-medium whitespace-nowrap">Thanh toán</span>
               </button>
             </div>
           </div>
@@ -306,17 +306,17 @@ export default function App() {
           <div className="relative z-10 flex items-center px-6 py-[18px] bg-white shrink-0">
             <div className="flex items-center gap-2">
               <Sparkles size={26} strokeWidth={1.8} className="text-amber-500" />
-              <span className="text-[17px] font-medium text-slate-900">Tro ly Win</span>
+              <span className="text-[17px] font-medium text-slate-900">Trợ lý Win</span>
             </div>
             <div className="ml-auto flex items-center gap-1.5">
               {phase === 'init' ? (
                 permDenied
-                  ? <span className="text-[13px] text-red-400">Can quyen mic</span>
-                  : <span className="text-[13px] text-slate-400">Dang khoi dong...</span>
+                  ? <span className="text-[13px] text-red-400">Cần quyền mic</span>
+                  : <span className="text-[13px] text-slate-400">Đang khởi động...</span>
               ) : (
                 <>
                   <div className={`w-2 h-2 rounded-full ${isListening ? 'bg-red-500 animate-pulse' : 'bg-green-400'}`} />
-                  <span className="text-[13px] text-slate-400">{isListening ? 'Dang nghe...' : 'San sang'}</span>
+                  <span className="text-[13px] text-slate-400">{isListening ? 'Đang nghe...' : 'Sẵn sàng'}</span>
                 </>
               )}
             </div>
@@ -346,9 +346,9 @@ export default function App() {
 
                 <p className="text-[19px] font-semibold text-slate-900 text-center">
                   {phase === 'init'
-                    ? (permDenied ? 'Nhan mic de cap quyen micro' : 'Dang khoi dong...')
-                    : isListening ? 'Dang nghe...'
-                    : 'Di Thu noi "Win oi" de bat dau nha'}
+                    ? (permDenied ? 'Nhấn mic để cấp quyền micro' : 'Đang khởi động...')
+                    : isListening ? 'Đang nghe...'
+                    : 'Dì Thư nói "Win ơi" để bắt đầu nha'}
                 </p>
 
                 {isListening && displayText ? (
@@ -361,9 +361,9 @@ export default function App() {
                 ) : (
                   <div className="grid grid-cols-3 gap-4 w-full max-w-[860px] mt-4">
                     {[
-                      { t: '🛍️ Ban hang', b: '"Binh mua 1 chai nuoc mam 49 ngan, 2 trung ga"' },
-                      { t: '📦 Kiem ton kho va dat hang', b: '"Tuong ot con bao nhieu chai?"\n"Dat them 1 thung Chinsu do"' },
-                      { t: '💰 Quan ly tien', b: '"Binh con no nhieu tien hang?"\n"Doanh thu hom nay nhieu?"' },
+                      { t: '🛍️ Bán hàng', b: '"Bình mua 1 chai nước mắm 49 ngàn, 2 trứng gà"' },
+                      { t: '📦 Kiểm tồn kho và đặt hàng', b: '"Tương ớt còn bao nhiêu chai?"\n"Đặt thêm 1 thùng Chinsu đỏ"' },
+                      { t: '💰 Quản lý tiền', b: '"Bình còn nợ nhiêu tiền hàng?"\n"Doanh thu hôm nay nhiêu?"' },
                     ].map((c, i) => (
                       <div key={i} className="border border-slate-200 rounded-2xl p-6 flex flex-col gap-2.5"
                         style={{ backdropFilter: 'blur(4px)', background: 'rgba(255,255,255,0.7)' }}>
@@ -376,7 +376,7 @@ export default function App() {
 
                 {permDenied && (
                   <p className="text-[13px] text-red-400 text-center mt-1">
-                    Vao Settings cap quyen microphone roi tai lai trang
+                    Vào Settings → cho phép truy cập microphone rồi tải lại trang
                   </p>
                 )}
               </div>
@@ -387,12 +387,12 @@ export default function App() {
               <div className="flex items-center bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                 <button className="flex items-center gap-3 h-[60px] px-6 hover:bg-slate-50 transition-colors text-slate-900">
                   <Camera size={20} strokeWidth={1.8} />
-                  <span className="text-[15px] font-medium whitespace-nowrap">Chup tao don</span>
+                  <span className="text-[15px] font-medium whitespace-nowrap">Chụp tạo đơn</span>
                 </button>
                 <div className="w-px h-6 bg-slate-200" />
                 <button className="flex items-center gap-3 h-[60px] px-6 hover:bg-slate-50 transition-colors text-slate-900">
                   <Keyboard size={20} strokeWidth={1.8} />
-                  <span className="text-[15px] font-medium whitespace-nowrap">Nhap tin nhan</span>
+                  <span className="text-[15px] font-medium whitespace-nowrap">Nhập tin nhắn</span>
                 </button>
               </div>
             </div>
