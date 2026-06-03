@@ -3,6 +3,8 @@ import {
   Search, Store, ChevronDown, CircleUserRound,
   Sparkles, Mic, Camera, Keyboard, AudioLines, SquarePen,
 } from 'lucide-react'
+import Lottie from 'lottie-react'
+import audioLiveIcon from './assets/audio-live-icon.json'
 
 const WAKE_PATTERNS = [
   'win oi', 'quyen oi', 'quin oi', 'wynn oi',
@@ -232,22 +234,23 @@ export default function App() {
                     <span className="text-[15px] font-medium whitespace-nowrap">Chup tao don</span>
                   </button>
                   <div className="w-px h-6 bg-slate-200" />
-                  {/* AudioLines record button */}
+                  {/* Record button — Lottie khi listening, static khi idle */}
                   <div className="flex items-center justify-center px-3">
-                    <button
-                      className="relative flex items-center justify-center rounded-full bg-red-600 hover:bg-red-700 active:scale-95 transition-all"
-                      style={{
-                        width: 84, height: 84,
-                        boxShadow: isListening
-                          ? '0 0 0 11px rgba(220,38,38,0.2)'
-                          : '0 2px 8px rgba(220,38,38,0.3)',
-                      }}
-                    >
-                      {isListening && (
-                        <span className="absolute inset-0 rounded-full bg-red-400 opacity-25 animate-ping" />
+                    <div className="relative" style={{ width: 84, height: 84 }}>
+                      {isListening ? (
+                        // Lottie canvas 120px, circle bên trong 84px → offset -18px để căn giữa đúng
+                        <div style={{ position: 'absolute', top: -18, left: -18, width: 120, height: 120, pointerEvents: 'none' }}>
+                          <Lottie animationData={audioLiveIcon} loop={true} />
+                        </div>
+                      ) : (
+                        <button
+                          className="flex items-center justify-center rounded-full bg-red-600 hover:bg-red-700 active:scale-95 transition-all"
+                          style={{ width: 84, height: 84, boxShadow: '0 2px 8px rgba(220,38,38,0.3)' }}
+                        >
+                          <AudioLines size={36} strokeWidth={1.8} className="text-white" />
+                        </button>
                       )}
-                      <AudioLines size={36} strokeWidth={1.8} className="text-white relative z-10" />
-                    </button>
+                    </div>
                   </div>
                   <div className="w-px h-6 bg-slate-200" />
                   <button className="flex items-center gap-3 h-[60px] px-6 hover:bg-slate-50 rounded-r-2xl transition-colors text-slate-900">
@@ -323,25 +326,23 @@ export default function App() {
           <div className="relative z-10 flex-1 flex flex-col min-h-0">
             <div className="flex-1 flex flex-col items-center justify-center px-12 py-20 overflow-auto">
               <div className="flex flex-col items-center gap-5 w-full">
-                {/* Big mic */}
-                <button
-                  onClick={handleMicClick}
-                  className="relative flex items-center justify-center w-[120px] h-[120px] rounded-full bg-red-600 hover:bg-red-700 active:scale-95 transition-all duration-300"
-                  style={{
-                    boxShadow: isListening
-                      ? '0 0 0 16px rgba(220,38,38,0.12)'
-                      : '0 4px 6px rgba(26,26,26,0.05),0 8px 10px rgba(26,26,26,0.05)',
-                  }}
-                >
-                  {isListening && (
-                    <>
-                      <span className="absolute inset-0 rounded-full bg-red-500 opacity-25 animate-ping" />
-                      <span className="absolute rounded-full bg-red-400 opacity-15 animate-ping"
-                        style={{ inset: -8, animationDelay: '0.3s' }} />
-                    </>
-                  )}
-                  <Mic size={52} strokeWidth={1.8} className="text-white relative z-10" />
-                </button>
+                {/* Big mic — Lottie khi listening, static Mic khi idle */}
+                {isListening ? (
+                  <button
+                    onClick={handleMicClick}
+                    style={{ width: 120, height: 120, background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}
+                  >
+                    <Lottie animationData={audioLiveIcon} loop={true} style={{ width: 120, height: 120 }} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleMicClick}
+                    className="flex items-center justify-center w-[120px] h-[120px] rounded-full bg-red-600 hover:bg-red-700 active:scale-95 transition-all duration-300"
+                    style={{ boxShadow: '0 4px 6px rgba(26,26,26,0.05),0 8px 10px rgba(26,26,26,0.05)' }}
+                  >
+                    <Mic size={52} strokeWidth={1.8} className="text-white" />
+                  </button>
+                )}
 
                 <p className="text-[19px] font-semibold text-slate-900 text-center">
                   {phase === 'init'
