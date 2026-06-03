@@ -21,19 +21,20 @@ function stripWakeWord(text) {
   return result.trim()
 }
 
-// Trạng thái: idle → listening → done
-// idle: nghe nền, hiện guide cards
-// listening: wake word detected, hiện mic pulse + transcript bubble
-// done: transcript xong, 3s rồi reset
+// Trạng thái: 'init' → 'idle' → 'listening' → 'done'
+// init: chưa có mic permission
+// idle: đang nghe nền chờ wake word
+// listening: wake word detected
+// done: nhận xong lệnh, 3.5s rồi reset về idle
 
 export default function App() {
-  const [phase, setPhase] = useState('idle')       // 'idle' | 'listening' | 'done'
-  const [liveText, setLiveText] = useState('')      // interim transcript
-  const [finalText, setFinalText] = useState('')    // final transcript
-  const [micReady, setMicReady] = useState(false)
+  const [phase, setPhase] = useState('init')        // 'init' | 'idle' | 'listening' | 'done'
+  const [liveText, setLiveText] = useState('')
+  const [finalText, setFinalText] = useState('')
+  const [permDenied, setPermDenied] = useState(false)
 
   const recRef = useRef(null)
-  const phaseRef = useRef('idle')
+  const phaseRef = useRef('init')
   const resetTimerRef = useRef(null)
   const restartTimerRef = useRef(null)
 
@@ -71,18 +72,15 @@ export default function App() {
       }
 
       if (phaseRef.current === 'idle') {
-        // Chờ wake word
         if (isWakeWord(interim) || isWakeWord(final)) {
           setPhase('listening')
           setLiveText('')
           setFinalText('')
           clearResetTimer()
         }
-      } else {
-        // Đang nhận lệnh sau wake word
+      } else if (phaseRef.current === 'listening' || phaseRef.current === 'done') {
         const cleanInterim = stripWakeWord(interim)
         const cleanFinal = stripWakeWord(final)
-
         if (cleanInterim) {
           setLiveText(cleanInterim)
           clearResetTimer()
@@ -103,7 +101,7 @@ export default function App() {
     }
 
     rec.onerror = (e) => {
-      if (e.error === 'not-allowed') { setMicReady(false); return }
+      if (e.error === 'not-allowed') { setPermDenied(true); setPhase('init'); return }
       restartTimerRef.current = setTimeout(() => {
         try { rec.start() } catch (_) {}
       }, 800)
@@ -113,33 +111,34 @@ export default function App() {
     try { rec.start() } catch (_) {}
   }, [scheduleReset])
 
-  const requestMic = async () => {
-    try {
-      await navigator.mediaDevices.getUserMedia({ audio: true })
-      setMicReady(true)
-      startRecognition()
-    } catch (_) {}
-  }
-
+  // Auto-start mic khi mount
   useEffect(() => {
+    const init = async () => {
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true })
+        setPhase('idle')
+        startRecognition()
+      } catch (_) {
+        setPermDenied(true)
+      }
+    }
+    init()
     return () => {
       clearTimeout(resetTimerRef.current)
       clearTimeout(restartTimerRef.current)
       recRef.current?.abort()
     }
-  }, [])
+  }, [startRecognition])
 
-  const handleMicClick = () => {
-    if (!micReady) { requestMic(); return }
-    if (phase === 'idle') {
-      setPhase('listening')
-      setLiveText('')
-      setFinalText('')
-    } else {
-      setPhase('idle')
-      setLiveText('')
-      setFinalText('')
-      clearResetTimer()
+  // Nhấn mic để grant permission thủ công nếu bị deny lần đầu
+  const handleMicClick = async () => {
+    if (phase === 'init') {
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true })
+        setPermDenied(false)
+        setPhase('idle')
+        startRecognition()
+      } catch (_) { setPermDenied(true) }
     }
   }
 
@@ -198,13 +197,19 @@ export default function App() {
               <Sparkles size={26} strokeWidth={1.8} className="text-amber-500" />
               <span className="text-[17px] font-medium text-slate-900">Trợ lý Win</span>
             </div>
-            {/* Mic status dot */}
-            {micReady && (
-              <div className="ml-auto flex items-center gap-1.5">
-                <div className={`w-2 h-2 rounded-full ${isListening ? 'bg-red-500 animate-pulse' : 'bg-green-400'}`} />
-                <span className="text-[13px] text-slate-400">{isListening ? 'Đang nghe...' : 'Sẵn sàng'}</span>
-              </div>
-            )}
+            {/* Mic status */}
+            <div className="ml-auto flex items-center gap-1.5">
+              {phase === 'init' ? (
+                permDenied
+                  ? <span className="text-[13px] text-red-400">Cần quyền mic</span>
+                  : <span className="text-[13px] text-slate-400">Đang khởi động...</span>
+              ) : (
+                <>
+                  <div className={`w-2 h-2 rounded-full ${isListening ? 'bg-red-500 animate-pulse' : 'bg-green-400'}`} />
+                  <span className="text-[13px] text-slate-400">{isListening ? 'Đang nghe...' : 'Sẵn sàng'}</span>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Content */}
@@ -235,11 +240,13 @@ export default function App() {
 
                 {/* Trạng thái text */}
                 <p className="text-[19px] font-semibold text-slate-900 text-center transition-all duration-300">
-                  {isListening
+                  {phase === 'init'
+                    ? (permDenied ? 'Nhấn mic để cấp quyền micro' : 'Đang khởi động...')
+                    : isListening
                     ? 'Đang nghe...'
                     : isDone
                     ? 'Xong rồi!'
-                    : 'Dì Thư nói “Win ơi” để bắt đầu nha'}
+                    : 'Dì Thư nói "Win ơi" để bắt đầu nha'}
                 </p>
 
                 {/* Chat bubble khi có transcript */}
@@ -290,10 +297,10 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Prompt khi chưa cấp mic */}
-                {!micReady && (
-                  <p className="text-[13px] text-slate-400 text-center mt-1">
-                    Nhấn mic để bật nhận diện giọng nói
+                {/* Hướng dẫn khi bị deny permission */}
+                {permDenied && (
+                  <p className="text-[13px] text-red-400 text-center mt-1">
+                    Vào Settings → cho phép truy cập microphone rồi tải lại trang
                   </p>
                 )}
               </div>
