@@ -7,16 +7,16 @@ import Lottie from 'lottie-react'
 import audioLiveIcon from './assets/audio-live-icon.json'
 
 const WAKE_PATTERNS = [
-  'win oi', 'quyen oi', 'quin oi', 'wynn oi',
+  'win ơi', 'quyên ơi', 'quin ơi', 'wynn ơi',
   'win oi', 'quyen oi', 'quin oi', 'wynn oi',
 ]
 
 function isWakeWord(text) {
   const lower = text.toLowerCase()
   return WAKE_PATTERNS.some(p => lower.includes(p))
-    || lower.includes('win') && lower.includes('oi')
-    || lower.includes('quyen') && lower.includes('oi')
-    || lower.includes('quin') && lower.includes('oi')
+    || lower.includes('win') && lower.includes('ơi')
+    || lower.includes('quyên') && lower.includes('ơi')
+    || lower.includes('quin') && lower.includes('ơi')
 }
 
 function stripWakeWord(text) {
