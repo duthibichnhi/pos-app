@@ -1,19 +1,157 @@
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  Search,
-  Store,
-  ChevronDown,
-  CircleUserRound,
-  Sparkles,
-  Mic,
-  Camera,
-  Keyboard,
+  Search, Store, ChevronDown, CircleUserRound,
+  Sparkles, Mic, Camera, Keyboard,
 } from 'lucide-react'
+
+// "Win" tiếng Anh thường bị nhận nhầm thành Quyên/Quin/Wynn
+const WAKE_PATTERNS = ['win ơi', 'quyên ơi', 'quin ơi', 'wynn ơi', 'win ới', 'quyên ới', 'quin ới']
+
+function isWakeWord(text) {
+  const lower = text.toLowerCase()
+  return WAKE_PATTERNS.some(p => lower.includes(p))
+}
+
+// Bỏ phần wake word ra khỏi transcript lệnh
+function stripWakeWord(text) {
+  let result = text.toLowerCase()
+  for (const p of WAKE_PATTERNS) {
+    result = result.replace(p, '')
+  }
+  return result.trim()
+}
+
+// Trạng thái: idle → listening → done
+// idle: nghe nền, hiện guide cards
+// listening: wake word detected, hiện mic pulse + transcript bubble
+// done: transcript xong, 3s rồi reset
+
 export default function App() {
+  const [phase, setPhase] = useState('idle')       // 'idle' | 'listening' | 'done'
+  const [liveText, setLiveText] = useState('')      // interim transcript
+  const [finalText, setFinalText] = useState('')    // final transcript
+  const [micReady, setMicReady] = useState(false)
+
+  const recRef = useRef(null)
+  const phaseRef = useRef('idle')
+  const resetTimerRef = useRef(null)
+  const restartTimerRef = useRef(null)
+
+  phaseRef.current = phase
+
+  const clearResetTimer = () => {
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+  }
+
+  const scheduleReset = useCallback(() => {
+    clearResetTimer()
+    resetTimerRef.current = setTimeout(() => {
+      setPhase('idle')
+      setLiveText('')
+      setFinalText('')
+    }, 3500)
+  }, [])
+
+  const startRecognition = useCallback(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SR) return
+
+    const rec = new SR()
+    rec.continuous = true
+    rec.interimResults = true
+    rec.lang = 'vi-VN'
+
+    rec.onresult = (e) => {
+      let interim = ''
+      let final = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript
+        if (e.results[i].isFinal) final += t
+        else interim += t
+      }
+
+      if (phaseRef.current === 'idle') {
+        // Chờ wake word
+        if (isWakeWord(interim) || isWakeWord(final)) {
+          setPhase('listening')
+          setLiveText('')
+          setFinalText('')
+          clearResetTimer()
+        }
+      } else {
+        // Đang nhận lệnh sau wake word
+        const cleanInterim = stripWakeWord(interim)
+        const cleanFinal = stripWakeWord(final)
+
+        if (cleanInterim) {
+          setLiveText(cleanInterim)
+          clearResetTimer()
+        }
+        if (cleanFinal) {
+          setFinalText(prev => (prev + ' ' + cleanFinal).trim())
+          setLiveText('')
+          setPhase('done')
+          scheduleReset()
+        }
+      }
+    }
+
+    rec.onend = () => {
+      restartTimerRef.current = setTimeout(() => {
+        try { rec.start() } catch (_) {}
+      }, 200)
+    }
+
+    rec.onerror = (e) => {
+      if (e.error === 'not-allowed') { setMicReady(false); return }
+      restartTimerRef.current = setTimeout(() => {
+        try { rec.start() } catch (_) {}
+      }, 800)
+    }
+
+    recRef.current = rec
+    try { rec.start() } catch (_) {}
+  }, [scheduleReset])
+
+  const requestMic = async () => {
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true })
+      setMicReady(true)
+      startRecognition()
+    } catch (_) {}
+  }
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(resetTimerRef.current)
+      clearTimeout(restartTimerRef.current)
+      recRef.current?.abort()
+    }
+  }, [])
+
+  const handleMicClick = () => {
+    if (!micReady) { requestMic(); return }
+    if (phase === 'idle') {
+      setPhase('listening')
+      setLiveText('')
+      setFinalText('')
+    } else {
+      setPhase('idle')
+      setLiveText('')
+      setFinalText('')
+      clearResetTimer()
+    }
+  }
+
+  const isListening = phase === 'listening'
+  const isDone = phase === 'done'
+  const hasTranscript = finalText || liveText
+  const displayText = finalText || liveText
+
   return (
     <div className="flex flex-col h-screen bg-[#f8fafc]">
       {/* Topbar */}
       <div className="flex items-center gap-4 px-6 py-6 bg-[#f8fafc] shrink-0">
-        {/* Search */}
         <div className="flex items-center h-[60px] w-[448px] bg-white border border-slate-300 rounded-2xl shadow-sm overflow-hidden shrink-0">
           <div className="flex items-center pl-4 pr-1">
             <Search className="text-slate-400" size={22} strokeWidth={1.8} />
@@ -24,22 +162,14 @@ export default function App() {
             </span>
           </div>
         </div>
-
-        {/* Spacer */}
         <div className="flex-1" />
-
-        {/* Right side */}
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-100 transition-colors">
             <Store size={22} strokeWidth={1.8} className="text-slate-700" />
-            <span className="text-[15px] font-medium text-slate-900 whitespace-nowrap">
-              Tạp hóa dì Thư
-            </span>
+            <span className="text-[15px] font-medium text-slate-900 whitespace-nowrap">Tạp hóa dì Thư</span>
             <ChevronDown size={20} strokeWidth={1.8} className="text-slate-700" />
           </button>
-
           <div className="w-px h-7 bg-slate-300" />
-
           <button className="flex items-center justify-center w-[60px] h-[60px] rounded-xl hover:bg-slate-100 transition-colors">
             <CircleUserRound size={22} strokeWidth={1.8} className="text-slate-700" />
           </button>
@@ -49,19 +179,16 @@ export default function App() {
       {/* Body */}
       <div className="flex-1 px-6 pb-6 overflow-hidden">
         <div className="relative bg-white rounded-3xl h-full flex flex-col overflow-hidden">
-          {/* Gradient blur backdrop */}
+
+          {/* Gradient backdrop */}
           <div
             className="absolute pointer-events-none rounded-full"
             style={{
-              width: '1300px',
-              height: '592px',
-              top: '50%',
-              left: '50%',
+              width: '1300px', height: '592px',
+              top: '50%', left: '50%',
               transform: 'translate(calc(-50% + 6px), calc(-50% + 12px))',
-              background:
-                'linear-gradient(-88deg, rgba(253,230,138,0.2) 0%, rgba(253,186,116,0.2) 51%, rgba(251,113,133,0.2) 100%)',
-              filter: 'blur(150px)',
-              zIndex: 0,
+              background: 'linear-gradient(-88deg, rgba(253,230,138,0.2) 0%, rgba(253,186,116,0.2) 51%, rgba(251,113,133,0.2) 100%)',
+              filter: 'blur(150px)', zIndex: 0,
             }}
           />
 
@@ -71,61 +198,104 @@ export default function App() {
               <Sparkles size={26} strokeWidth={1.8} className="text-amber-500" />
               <span className="text-[17px] font-medium text-slate-900">Trợ lý Win</span>
             </div>
+            {/* Mic status dot */}
+            {micReady && (
+              <div className="ml-auto flex items-center gap-1.5">
+                <div className={`w-2 h-2 rounded-full ${isListening ? 'bg-red-500 animate-pulse' : 'bg-green-400'}`} />
+                <span className="text-[13px] text-slate-400">{isListening ? 'Đang nghe...' : 'Sẵn sàng'}</span>
+              </div>
+            )}
           </div>
 
-          {/* AI Chat */}
+          {/* Content */}
           <div className="relative z-10 flex-1 flex flex-col min-h-0">
-            {/* Messages */}
             <div className="flex-1 flex flex-col items-center justify-center px-12 py-20 overflow-auto">
               <div className="flex flex-col items-center gap-5 w-full">
-                {/* Record button */}
+
+                {/* Mic button */}
                 <button
-                  className="flex items-center justify-center w-[120px] h-[120px] rounded-full bg-red-600 hover:bg-red-700 active:scale-95 transition-all"
+                  onClick={handleMicClick}
+                  className="relative flex items-center justify-center w-[120px] h-[120px] rounded-full transition-all duration-300 active:scale-95"
                   style={{
-                    boxShadow: '0 4px 6px rgba(26,26,26,0.05), 0 8px 10px rgba(26,26,26,0.05)',
+                    background: isListening ? '#dc2626' : '#dc2626',
+                    boxShadow: isListening
+                      ? '0 0 0 0 rgba(220,38,38,0.4)'
+                      : '0 4px 6px rgba(26,26,26,0.05), 0 8px 10px rgba(26,26,26,0.05)',
                   }}
                 >
-                  <Mic size={52} strokeWidth={1.8} className="text-white" />
+                  {/* Pulse rings khi listening */}
+                  {isListening && (
+                    <>
+                      <span className="absolute inset-0 rounded-full bg-red-500 opacity-30 animate-ping" />
+                      <span className="absolute inset-[-8px] rounded-full bg-red-400 opacity-20 animate-ping" style={{ animationDelay: '0.3s' }} />
+                    </>
+                  )}
+                  <Mic size={52} strokeWidth={1.8} className="text-white relative z-10" />
                 </button>
 
-                <p className="text-[19px] font-semibold text-slate-900 text-center">
-                  Dì Thư nói &ldquo;Win ơi&rdquo; để bắt đầu nha
+                {/* Trạng thái text */}
+                <p className="text-[19px] font-semibold text-slate-900 text-center transition-all duration-300">
+                  {isListening
+                    ? 'Đang nghe...'
+                    : isDone
+                    ? 'Xong rồi!'
+                    : 'Dì Thư nói “Win ơi” để bắt đầu nha'}
                 </p>
 
-                {/* Guide cards */}
-                <div className="grid grid-cols-3 gap-4 w-full max-w-[860px] mt-4">
-                  <div
-                    className="border border-slate-200 rounded-2xl p-6 flex flex-col gap-2.5"
-                    style={{ backdropFilter: 'blur(4px)', background: 'rgba(255,255,255,0.7)' }}
-                  >
-                    <p className="text-[16px] font-semibold text-slate-900">🛍️ Bán hàng</p>
-                    <p className="text-[14px] italic text-slate-700 leading-relaxed">
-                      &ldquo;Bình mua 1 chai nước mắm 49 ngàn, 2 trứng gà&rdquo;
-                    </p>
-                  </div>
-
-                  <div
-                    className="border border-slate-200 rounded-2xl p-6 flex flex-col gap-2.5"
-                    style={{ backdropFilter: 'blur(4px)', background: 'rgba(255,255,255,0.7)' }}
-                  >
-                    <p className="text-[16px] font-semibold text-slate-900">📦 Kiểm tồn kho và đặt hàng</p>
-                    <div className="flex flex-col gap-0.5 text-[14px] italic text-slate-700 leading-relaxed">
-                      <p>&ldquo;Tương ớt còn bao nhiêu chai?&rdquo;</p>
-                      <p>&ldquo;Đặt thêm 1 thùng Chinsu đỏ&rdquo;</p>
+                {/* Chat bubble khi có transcript */}
+                {hasTranscript ? (
+                  <div className="w-full max-w-[860px] mt-2">
+                    <div
+                      className="w-full border border-slate-200 rounded-2xl p-6 text-[17px] text-slate-800 leading-relaxed min-h-[64px]"
+                      style={{ backdropFilter: 'blur(4px)', background: 'rgba(255,255,255,0.85)' }}
+                    >
+                      {displayText}
+                      {isListening && liveText && (
+                        <span className="text-slate-400"> ...</span>
+                      )}
                     </div>
                   </div>
-
-                  <div
-                    className="border border-slate-200 rounded-2xl p-6 flex flex-col gap-2.5"
-                    style={{ backdropFilter: 'blur(4px)', background: 'rgba(255,255,255,0.7)' }}
-                  >
-                    <p className="text-[16px] font-semibold text-slate-900">💰 Quản lý tiền</p>
-                    <div className="flex flex-col gap-0.5 text-[14px] italic text-slate-700 leading-relaxed">
-                      <p>&ldquo;Bình còn nợ nhiêu tiền hàng?&rdquo;</p>
-                      <p>&ldquo;Doanh thu hôm nay nhiêu?&rdquo;</p>
+                ) : (
+                  /* Guide cards khi idle */
+                  <div className="grid grid-cols-3 gap-4 w-full max-w-[860px] mt-4">
+                    <div
+                      className="border border-slate-200 rounded-2xl p-6 flex flex-col gap-2.5"
+                      style={{ backdropFilter: 'blur(4px)', background: 'rgba(255,255,255,0.7)' }}
+                    >
+                      <p className="text-[16px] font-semibold text-slate-900">🛍️ Bán hàng</p>
+                      <p className="text-[14px] italic text-slate-700 leading-relaxed">
+                        &ldquo;Bình mua 1 chai nước mắm 49 ngàn, 2 trứng gà&rdquo;
+                      </p>
+                    </div>
+                    <div
+                      className="border border-slate-200 rounded-2xl p-6 flex flex-col gap-2.5"
+                      style={{ backdropFilter: 'blur(4px)', background: 'rgba(255,255,255,0.7)' }}
+                    >
+                      <p className="text-[16px] font-semibold text-slate-900">📦 Kiểm tồn kho và đặt hàng</p>
+                      <div className="flex flex-col gap-0.5 text-[14px] italic text-slate-700 leading-relaxed">
+                        <p>&ldquo;Tương ớt còn bao nhiêu chai?&rdquo;</p>
+                        <p>&ldquo;Đặt thêm 1 thùng Chinsu đỏ&rdquo;</p>
+                      </div>
+                    </div>
+                    <div
+                      className="border border-slate-200 rounded-2xl p-6 flex flex-col gap-2.5"
+                      style={{ backdropFilter: 'blur(4px)', background: 'rgba(255,255,255,0.7)' }}
+                    >
+                      <p className="text-[16px] font-semibold text-slate-900">💰 Quản lý tiền</p>
+                      <div className="flex flex-col gap-0.5 text-[14px] italic text-slate-700 leading-relaxed">
+                        <p>&ldquo;Bình còn nợ nhiêu tiền hàng?&rdquo;</p>
+                        <p>&ldquo;Doanh thu hôm nay nhiêu?&rdquo;</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* Prompt khi chưa cấp mic */}
+                {!micReady && (
+                  <p className="text-[13px] text-slate-400 text-center mt-1">
+                    Nhấn mic để bật nhận diện giọng nói
+                  </p>
+                )}
               </div>
             </div>
 
