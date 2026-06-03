@@ -32,6 +32,7 @@ export default function App() {
   const [liveText, setLiveText] = useState('')
   const [draftText, setDraftText] = useState('')
   const [permDenied, setPermDenied] = useState(false)
+  const [debugHeard, setDebugHeard] = useState('')
 
   const recRef = useRef(null)
   const phaseRef = useRef('init')
@@ -78,6 +79,8 @@ export default function App() {
       const cur = phaseRef.current
 
       if (cur === 'idle' || cur === 'submitted') {
+        const heard = interim || final
+        if (heard) setDebugHeard(heard)
         if (isWakeWord(interim) || isWakeWord(final)) {
           setDraftText('')
           setLiveText('')
@@ -377,6 +380,13 @@ export default function App() {
                 {permDenied && (
                   <p className="text-[13px] text-red-400 text-center mt-1">
                     Vào Settings → cho phép truy cập microphone rồi tải lại trang
+                  </p>
+                )}
+
+                {/* Debug: raw transcript */}
+                {debugHeard && (
+                  <p className="text-[12px] text-slate-300 text-center mt-2 font-mono">
+                    nghe: &ldquo;{debugHeard}&rdquo;
                   </p>
                 )}
               </div>
