@@ -33,6 +33,8 @@ export default function App() {
   const [draftText, setDraftText] = useState('')
   const [permDenied, setPermDenied] = useState(false)
   const [debugHeard, setDebugHeard] = useState('')
+  const [debugError, setDebugError] = useState('')
+  const [debugRestarts, setDebugRestarts] = useState(0)
 
   const recRef = useRef(null)
   const phaseRef = useRef('init')
@@ -103,9 +105,11 @@ export default function App() {
     }
 
     rec.onend = () => {
+      setDebugRestarts(n => n + 1)
       restartTimerRef.current = setTimeout(() => { try { rec.start() } catch (_) {} }, 200)
     }
     rec.onerror = (e) => {
+      setDebugError(e.error)
       if (e.error === 'not-allowed') { setPermDenied(true); setPhase('init'); return }
       restartTimerRef.current = setTimeout(() => { try { rec.start() } catch (_) {} }, 800)
     }
@@ -383,12 +387,12 @@ export default function App() {
                   </p>
                 )}
 
-                {/* Debug: raw transcript */}
-                {debugHeard && (
-                  <p className="text-[12px] text-slate-300 text-center mt-2 font-mono">
-                    nghe: &ldquo;{debugHeard}&rdquo;
-                  </p>
-                )}
+                {/* Debug panel */}
+                <div className="text-[11px] font-mono text-slate-400 text-center mt-3 space-y-0.5">
+                  <p>phase: {phase} | restarts: {debugRestarts}</p>
+                  {debugError && <p className="text-red-400">lỗi: {debugError}</p>}
+                  {debugHeard && <p>nghe: &ldquo;{debugHeard}&rdquo;</p>}
+                </div>
               </div>
             </div>
 
